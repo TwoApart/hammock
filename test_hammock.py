@@ -51,6 +51,14 @@ class TestCaseWrest(unittest.TestCase):
             self.assertIsNotNone(resp.json.get('method', None))
             self.assertEqual(resp.json.get('method').lower(), method)
 
+    def test_GET_filters(self):
+        client = Hammock(BASE_URL)
+        resp = client.GET(filter=12)
+        self.assertEqual(resp.json['querystring'], 'filter=12')
+        self.assertRaises(Exception, lambda: client.GET(filter=12, timeout=14))
+        resp = client.GET(filter=12, foo="bar")
+        self.assertEqual(resp.json['querystring'], 'filter=12&foo=bar')
+
     def test_urls(self):
         client = Hammock(BASE_URL)
         combs = [

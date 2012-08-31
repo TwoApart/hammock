@@ -88,6 +88,35 @@ def bind_method(method):
     static methods."""
     def aux(hammock, *args, **kwargs):
         session = hammock._probe_session() or requests
+
+        # allows to do GET(filter=12) instead of having to do
+        # GET({'params': {'filter': 12}})
+        # This is a list of special keyword arguments in requests
+        REQUESTS_SPECIAL_KEYS = set([
+            'params', 'headers', 'cookies', 'auth', 'timeout',
+            'allow_redirects', 'proxies', 'return_response', 'session',
+            'config', 'verify', 'prefetch', 'cert'
+        ])
+        if method == 'get' and kwargs and 'params' not in kwargs:
+            special_key_found = non_special_key_found = False
+            params_to_send = {}
+
+            for key in kwargs:
+                if key not in REQUESTS_SPECIAL_KEYS:
+                    non_special_key_found = True
+                    params_to_send.setdefault('params', {}).update(
+                        {key: kwargs[key]}
+                    )
+                else:
+                    special_key_found = True
+
+            if special_key_found and non_special_key_found:
+                raise Exception("You cannot pass a requests kwarg and an \
+                    unknown kwarg together")
+
+            if non_special_key_found:
+                kwargs = params_to_send
+
         return session.request(method, hammock._url(*args), **kwargs)
     return aux
 
