@@ -121,6 +121,26 @@ class TestCaseWrest(unittest.TestCase):
         self.assertIsNotNone(headers.get('HTTP_FOO', None))
         self.assertEqual(headers.get('HTTP_FOO'), 'bar')
 
+    def test_inheritance(self):
+        class CustomHammock(Hammock):
+            def __init__(self, name=None, parent=None, **kwargs):
+                if 'testing' in kwargs:
+                    self.testing = kwargs.pop('testing')
+                super(CustomHammock, self).__init__(name, parent, **kwargs)
+
+            def _url(self, *args):
+                assert isinstance(self.testing, bool)
+                global called
+                called = True
+                return super(CustomHammock, self)._url(*args)
+
+        global called
+        called = False
+        client = CustomHammock(BASE_URL, testing=True)
+        resp = client.sample.path.to.GET()
+        self.assertEqual(resp.json['path'], '/sample/path/to')
+        self.assertTrue(called)
+
 
 if __name__ == '__main__':
     unittest.main()
