@@ -97,13 +97,18 @@ class Hammock(object):
         """ String representaion of current `Hammock` chain"""
         return self._url()
 
+    def _request(self, method, *args, **kwargs):
+        """
+        Makes the HTTP request using requests module
+        """
+        session = self._probe_session() or requests
+        return session.request(method, self._url(*args), **kwargs)
+
 
 def bind_method(method):
     """Bind `requests` module HTTP verbs to `Hammock` class as
     static methods."""
     def aux(hammock, *args, **kwargs):
-        session = hammock._probe_session() or requests
-
         # allows to do GET(filter=12) instead of having to do
         # GET({'params': {'filter': 12}})
         # This is a list of special keyword arguments in requests
@@ -132,7 +137,7 @@ def bind_method(method):
             if non_special_key_found:
                 kwargs = params_to_send
 
-        return session.request(method, hammock._url(*args), **kwargs)
+        return hammock._request(method, *args, **kwargs)
     return aux
 
 
