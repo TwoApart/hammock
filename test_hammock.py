@@ -77,6 +77,23 @@ class TestCaseWrest(unittest.TestCase):
             self.assertIsNotNone(resp.json.get('path', None))
             self.assertEqual(resp.json.get('path'), PATH)
 
+        client = Hammock(BASE_URL, append_slash=True)
+        combs = [
+            client.sample.path.to.resource,
+            client('sample').path('to').resource,
+            client('sample', 'path', 'to', 'resource'),
+            client('sample')('path')('to')('resource'),
+            client.sample('path')('to', 'resource'),
+            client('sample', 'path',).to.resource
+        ]
+
+        for comb in combs:
+            self.assertEqual(str(comb), URL + '/')
+            resp = comb.GET()
+            self.assertIsNotNone(resp.json)
+            self.assertIsNotNone(resp.json.get('path', None))
+            self.assertEqual(resp.json.get('path'), PATH + '/')
+
     def test_body(self):
         client = Hammock(BASE_URL)
         body = "body fixture"

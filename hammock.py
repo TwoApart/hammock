@@ -6,7 +6,7 @@ class Hammock(object):
 
     HTTP_METHODS = ['get', 'options', 'head', 'post', 'put', 'patch', 'delete']
 
-    def __init__(self, name=None, parent=None, **kwargs):
+    def __init__(self, name=None, parent=None, append_slash=False, **kwargs):
         """Constructor
 
         Arguments:
@@ -16,13 +16,14 @@ class Hammock(object):
         """
         self._name = name
         self._parent = parent
+        self._append_slash = append_slash
         self._session = kwargs and requests.session(**kwargs) or None
 
     def __getattr__(self, name):
         """Here comes some magic. Any absent attribute typed within class
         falls here and return a new child `Hammock` instance in the chain.
         """
-        return Hammock(name=name, parent=self)
+        return Hammock(name=name, parent=self, append_slash=self._append_slash)
 
     def __iter__(self):
         """Iterator implementation which iterates over `Hammock` chain."""
@@ -40,7 +41,7 @@ class Hammock(object):
         """
         chain = self
         for arg in args:
-            chain = Hammock(name=str(arg), parent=chain)
+            chain = Hammock(name=str(arg), parent=chain, append_slash=self._append_slash)
         return chain
 
     def _probe_session(self):
@@ -76,7 +77,12 @@ class Hammock(object):
             *args -- extra url path components to tail
         """
         path_comps = [mock._name for mock in self._chain(*args)]
-        return "/".join(reversed(path_comps))
+
+        if self._append_slash:
+            url = "/".join(reversed(path_comps))
+            return url + '/'
+        else:
+            return "/".join(reversed(path_comps))
 
     def __repr__(self):
         """ String representaion of current `Hammock` chain"""
