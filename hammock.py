@@ -22,7 +22,12 @@ class Hammock(object):
         """Here comes some magic. Any absent attribute typed within class
         falls here and return a new child `Hammock` instance in the chain.
         """
-        return Hammock(name=name, parent=self)
+        chain = self.__class__(name=name, parent=self)
+        for attribute, value in self.__dict__.items():
+            if attribute not in ('_name', '_parent'):
+               setattr(chain, attribute, value)
+
+        return chain
 
     def __iter__(self):
         """Iterator implementation which iterates over `Hammock` chain."""
@@ -40,7 +45,11 @@ class Hammock(object):
         """
         chain = self
         for arg in args:
-            chain = Hammock(name=str(arg), parent=chain)
+            chain = self.__class__(name=str(arg), parent=chain)
+        for attribute, value in self.__dict__.items():
+            if attribute not in ('_name', '_parent'):
+                setattr(chain, attribute, value)
+
         return chain
 
     def _probe_session(self):
@@ -90,6 +99,7 @@ def bind_method(method):
         session = hammock._probe_session() or requests
         return session.request(method, hammock._url(*args), **kwargs)
     return aux
+
 
 for method in Hammock.HTTP_METHODS:
     setattr(Hammock, method.upper(), bind_method(method))
